@@ -54,7 +54,6 @@ import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontal
 import DropDownFontSize from "../../components/DropDownFontSize";
 import { getSelectedNode } from "../../utils/getSelectedNode";
 import DropdownColorPicker from "../../components/DropDownColorPicker";
-import BlockFormatDropDown from "../../components/DropDownBlock";
 import DropDownLineHeight from "../../components/DropDownLineHeight";
 import {
   IconBackgound,
@@ -668,6 +667,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         <IconHorizontalRule />
       </ToolbarButton>
       <ToolbarButton
+        disabled={disabled}
         onClick={() => {
           showModal("插入表格", (onClose) => (
             <InsertTableDialog activeEditor={activeEditor} onClose={onClose} />

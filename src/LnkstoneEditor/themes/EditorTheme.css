@@ -1042,13 +1042,13 @@ button.toolbarbutton:disabled:hover {
 }
 
 .lexicaltheme__dropdown__activor_sm:hover {
-  background-color: #0000000d !important;
+  background-color: #0000000d;
 }
 
 .lexicaltheme__dropdown__activor_sm:disabled {
   color: #d1d5db;
   cursor: default;
-  background-color: transparent;
+  background-color: white;
 }
 
 .lexicaltheme__dropdown__activor {
@@ -1068,13 +1068,13 @@ button.toolbarbutton:disabled:hover {
 }
 
 .lexicaltheme__dropdown__activor:hover {
-  background-color: #0000000d !important;
+  background-color: #0000000d;
 }
 
 .lexicaltheme__dropdown__activor:disabled {
   color: #d1d5db;
   cursor: default;
-  background-color: transparent;
+  background-color: white;
 }
 
 .lexicaltheme__dropdown__item {
