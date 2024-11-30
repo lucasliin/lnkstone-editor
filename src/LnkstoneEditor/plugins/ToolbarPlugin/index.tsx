@@ -48,7 +48,7 @@ import {
   UNDO_COMMAND,
 } from "lexical";
 import clsx from "clsx";
-import { Dispatch, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 
 import DropDownFontSize from "../../components/DropDownFontSize";
@@ -135,11 +135,10 @@ export const ToolbarButton: React.FC<ToolbarButtonProps> = (props) => {
 
 interface ToolbarPluginProps {
   disabled?: boolean;
-  setIsLinkEditMode: Dispatch<boolean>;
 }
 
 const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
-  const { disabled, setIsLinkEditMode } = props;
+  const { disabled } = props;
   const [editor] = useLexicalComposerContext();
   const [activeEditor, setActiveEditor] = useState(editor);
   const toolbarRef = useRef(null);
@@ -407,16 +406,14 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
 
   const insertLink = useCallback(() => {
     if (!isLink) {
-      setIsLinkEditMode(true);
       activeEditor.dispatchCommand(
         TOGGLE_LINK_COMMAND,
         sanitizeUrl("https://")
       );
     } else {
-      setIsLinkEditMode(false);
       activeEditor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
-  }, [activeEditor, isLink, setIsLinkEditMode]);
+  }, [activeEditor, isLink]);
 
   const formatParagraph = () => {
     editor.update(() => {
