@@ -653,7 +653,7 @@ button.toolbarbutton:disabled:hover {
 
 .toolbarbutton-active {
   background-color: #0000000d !important;
-  color: var(--lexicaltheme-primary-color);
+  color: var(--lexicaltheme-primary-color) !important;
 }
 
 .insertimage-dialog {
@@ -662,6 +662,14 @@ button.toolbarbutton:disabled:hover {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.editimage-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  max-width: 500px;
 }
 
 .insertimage-dialog-button {
