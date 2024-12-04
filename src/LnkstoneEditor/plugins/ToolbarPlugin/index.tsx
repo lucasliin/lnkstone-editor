@@ -120,7 +120,6 @@ export const ToolbarButton: React.FC<ToolbarButtonProps> = (props) => {
   const { children, className, active, ...rest } = props;
   return (
     <button
-      type="button"
       className={clsx(
         "toolbarbutton",
         active ? "toolbarbutton-active" : "",

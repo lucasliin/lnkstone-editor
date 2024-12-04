@@ -202,7 +202,6 @@ const FloatingLinkEditor: React.FC<{
               onChange={(event) => setEditedLinkUrl(event.target.value)}
             />
             <button
-              role="button"
               className="link-confirm"
               onClick={handleLinkSubmission}
               onMouseDown={(event) => event.preventDefault()}

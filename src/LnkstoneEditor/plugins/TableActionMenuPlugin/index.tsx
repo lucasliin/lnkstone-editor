@@ -468,7 +468,6 @@ function TableActionMenu({
     if (canMergeCells) {
       mergeCellButton = (
         <button
-          type="button"
           className="lexicaltheme__dropdown__item"
           onClick={() => mergeTableCellsAtSelection()}
         >
@@ -478,7 +477,6 @@ function TableActionMenu({
     } else if (canUnmergeCell) {
       mergeCellButton = (
         <button
-          type="button"
           className="lexicaltheme__dropdown__item"
           onClick={() => unmergeTableCellsAtSelection()}
         >
@@ -498,7 +496,6 @@ function TableActionMenu({
     >
       {mergeCellButton}
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() =>
           showColorPickerModal("背景颜色", () => (
@@ -515,7 +512,6 @@ function TableActionMenu({
         修改单元格背景颜色
       </button>
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => toggleRowStriping()}
       >
@@ -523,14 +519,12 @@ function TableActionMenu({
       </button>
       <Divider />
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => insertTableRowAtSelection(false)}
       >
         {selectionCounts.rows === 1 ? "在顶部添加行" : "在中间插入行"}
       </button>
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => insertTableRowAtSelection(true)}
       >
@@ -539,7 +533,6 @@ function TableActionMenu({
       <Divider />
       {selectionCounts.columns > 1 ? null : (
         <button
-          type="button"
           disabled={selectionCounts.columns > 1}
           className="lexicaltheme__dropdown__item"
           onClick={() => insertTableColumnAtSelection(false)}
@@ -549,7 +542,6 @@ function TableActionMenu({
       )}
       {selectionCounts.columns > 1 ? null : (
         <button
-          type="button"
           disabled={selectionCounts.columns > 1}
           className="lexicaltheme__dropdown__item"
           onClick={() => insertTableColumnAtSelection(true)}
@@ -559,21 +551,18 @@ function TableActionMenu({
       )}
       <Divider />
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => deleteTableColumnAtSelection()}
       >
         删除列
       </button>
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => deleteTableRowAtSelection()}
       >
         删除行
       </button>
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => deleteTableAtSelection()}
       >
@@ -581,7 +570,6 @@ function TableActionMenu({
       </button>
       <Divider />
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => toggleTableRowIsHeader()}
       >
@@ -592,7 +580,6 @@ function TableActionMenu({
         表头（行）
       </button>
       <button
-        type="button"
         className="lexicaltheme__dropdown__item"
         onClick={() => toggleTableColumnIsHeader()}
       >
@@ -715,7 +702,6 @@ function TableCellActionMenuContainer({
       {tableCellNode != null && (
         <>
           <button
-            type="button"
             className="table-cell-action-button"
             onClick={(e) => {
               e.stopPropagation();
