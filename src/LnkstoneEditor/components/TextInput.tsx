@@ -56,8 +56,9 @@ const TextInput: React.FC<TextInputProps> = (props) => {
           }}
           onChange={(e) => {
             if (type === "number") {
-              if (!/\d+(\.\d*)?$/.test(e.target.value)) return;
-              onChange(e.target.value);
+              const value = e.target.value.trim();
+              if (!/^\d*\.?\d*$/.test(value)) return;
+              onChange(value);
             } else {
               onChange(e.target.value);
             }
