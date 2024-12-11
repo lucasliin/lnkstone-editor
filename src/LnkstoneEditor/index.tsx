@@ -37,12 +37,14 @@ import {
   $isDecoratorNode,
   $isElementNode,
   LexicalEditor,
+  TextNode,
 } from "lexical";
 import { $generateNodesFromDOM } from "@lexical/html";
 import MaxLengthPlugin from "./plugins/MaxLengthPlugin";
 import { useDebounceEffect } from "ahooks";
 import TableHoverActionsPlugin from "./plugins/TableHoverActionsPlugin";
 import TableOfContentsPlugin from "./plugins/TableOfContentsPlugin";
+import { ExtendedTextNode } from "./nodes/ExtendedTextNode";
 // import DraggableBlockPlugin from "./plugins/DraggableBlockPlugin";
 
 export interface LnkstoneEditorProps {
@@ -120,8 +122,16 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
         ? (editor: LexicalEditor) =>
             prepopulatedRichText({ value: defaultValue!, editor })
         : undefined,
-    namespace: "Lexical Demo",
-    nodes: [...PlaygroundNodes],
+    namespace: "Lnkstone Editor",
+    nodes: [
+      ...PlaygroundNodes,
+      ExtendedTextNode,
+      {
+        replace: TextNode,
+        with: (node: TextNode) => new ExtendedTextNode(node.__text),
+        withKlass: ExtendedTextNode,
+      },
+    ],
     onError(error: Error) {
       throw error;
     },
