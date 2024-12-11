@@ -122,7 +122,7 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
         ? (editor: LexicalEditor) =>
             prepopulatedRichText({ value: defaultValue!, editor })
         : undefined,
-    namespace: "Lexical Demo",
+    namespace: "Lnkstone Editor",
     nodes: [
       ...PlaygroundNodes,
       ExtendedTextNode,
