@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { IconDraggableBlockMenu } from "../../icons";
 
 function isOnMenu(element: HTMLElement): boolean {
-  return !!element.closest("draggable-block-menu");
+  return !!element.closest(".draggable-block-menu");
 }
 
 const DraggableBlockPlugin: React.FC<{
@@ -12,7 +12,6 @@ const DraggableBlockPlugin: React.FC<{
 }> = ({ anchorElem = document.body }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const targetLineRef = useRef<HTMLDivElement>(null);
-
   return (
     <DraggableBlockPlugin_EXPERIMENTAL
       menuRef={menuRef}
