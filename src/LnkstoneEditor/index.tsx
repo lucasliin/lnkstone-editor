@@ -13,6 +13,7 @@ import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
 import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { HashtagPlugin } from "@lexical/react/LexicalHashtagPlugin";
 import { CAN_USE_DOM } from "@lexical/utils";
+import { $isLinkNode } from "@lexical/link";
 
 import ToolbarPlugin from "./plugins/ToolbarPlugin";
 import theme from "./themes/CommentEditorTheme";
@@ -103,15 +104,32 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
         "text/html"
       );
       const generatedNodes = $generateNodesFromDOM(params.editor, document);
-      const nodes = generatedNodes.map((node) => {
+
+      const nodes = [];
+      let temp = [];
+
+      for (let i = 0; i < generatedNodes.length; i++) {
+        const node = generatedNodes[i];
         if (!$isElementNode(node) && !$isDecoratorNode(node)) {
           const p = $createParagraphNode();
-          p.append(node);
-          return p;
+          if (temp.length > 0) {
+            p.append(...temp);
+            temp = [];
+          } else {
+            p.append(node);
+          }
+          nodes.push(p);
+        } else if ($isLinkNode(node)) {
+          temp.push(node);
+        } else {
+          nodes.push(node);
         }
-
-        return node;
-      });
+      }
+      if (temp.length > 0) {
+        const p = $createParagraphNode();
+        p.append(...temp);
+        nodes.push(p);
+      }
       root.append(...nodes);
     });
   }
