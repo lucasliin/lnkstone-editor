@@ -56,6 +56,7 @@ const theme: EditorThemeClasses = {
   tableRowStriping: "lexicaltheme__tableRowStriping",
   tableSelected: "lexicaltheme__tableSelected",
   tableSelection: "lexicaltheme__tableSelection",
+  tableScrollableWrapper: "lexicaltheme__tableScrollableWrapper",
 
   embedBlock: {
     base: "lexicaltheme__embedBlock",

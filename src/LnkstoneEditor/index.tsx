@@ -241,6 +241,7 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
             <ListPlugin />
             <CheckListPlugin />
             <TablePlugin
+              hasHorizontalScroll
               hasCellMerge={tableCellMerge}
               hasCellBackgroundColor={tableCellBackgroundColor}
             />
