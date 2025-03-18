@@ -16,6 +16,10 @@
   background-color: transparent;
 }
 
+.lexicaltheme__tableScrollableWrapper { 
+  overflow-x: auto;
+}
+
 .lexicaltheme__tableSelected {
   outline: 2px solid rgb(60, 132, 244);
 }

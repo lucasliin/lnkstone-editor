@@ -13,11 +13,12 @@ import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
 import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { HashtagPlugin } from "@lexical/react/LexicalHashtagPlugin";
 import { CAN_USE_DOM } from "@lexical/utils";
+import { $isLinkNode } from "@lexical/link";
 
 import ToolbarPlugin from "./plugins/ToolbarPlugin";
 import theme from "./themes/CommentEditorTheme";
 import { useSharedHistoryContext } from "./context/SharedHistoryContext";
-import { useSettings } from "./context/SettingsContext";
+import { SettingsContext, useSettings } from "./context/SettingsContext";
 import PlaygroundNodes from "./nodes/PlaygroundNodes";
 import PageBreakPlugin from "./plugins/PageDividerPlugin";
 import LexicalContentEditable from "./components/ContentEditable";
@@ -44,8 +45,9 @@ import MaxLengthPlugin from "./plugins/MaxLengthPlugin";
 import { useDebounceEffect } from "ahooks";
 import TableHoverActionsPlugin from "./plugins/TableHoverActionsPlugin";
 import TableOfContentsPlugin from "./plugins/TableOfContentsPlugin";
+import DraggableBlockPlugin from "./plugins/DraggableBlockPlugin";
 import { ExtendedTextNode } from "./nodes/ExtendedTextNode";
-// import DraggableBlockPlugin from "./plugins/DraggableBlockPlugin";
+import { TableContext } from "./plugins/TablePlugin";
 
 export interface LnkstoneEditorProps {
   id?: string;
@@ -102,15 +104,32 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
         "text/html"
       );
       const generatedNodes = $generateNodesFromDOM(params.editor, document);
-      const nodes = generatedNodes.map((node) => {
+
+      const nodes = [];
+      let temp = [];
+
+      for (let i = 0; i < generatedNodes.length; i++) {
+        const node = generatedNodes[i];
         if (!$isElementNode(node) && !$isDecoratorNode(node)) {
           const p = $createParagraphNode();
-          p.append(node);
-          return p;
+          if (temp.length > 0) {
+            p.append(...temp);
+            temp = [];
+          } else {
+            p.append(node);
+          }
+          nodes.push(p);
+        } else if ($isLinkNode(node)) {
+          temp.push(node);
+        } else {
+          nodes.push(node);
         }
-
-        return node;
-      });
+      }
+      if (temp.length > 0) {
+        const p = $createParagraphNode();
+        p.append(...temp);
+        nodes.push(p);
+      }
       root.append(...nodes);
     });
   }
@@ -122,7 +141,7 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
         ? (editor: LexicalEditor) =>
             prepopulatedRichText({ value: defaultValue!, editor })
         : undefined,
-    namespace: "Lnkstone Editor",
+    namespace: "Lnkstone Editor" + id,
     nodes: [
       ...PlaygroundNodes,
       ExtendedTextNode,
@@ -176,35 +195,39 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
   }, [richTextValue]);
 
   return (
-    <LexicalComposer initialConfig={initialConfig}>
-      <div
-        id={id}
-        className="richtext-editor"
-        style={{ borderColor: borderColor.get(status) }}
-      >
-        <ToolbarPlugin disabled={disabled} />
-        {max && (
-          <MaxLengthPlugin max={max.len} preventInput={max.preventInput} />
-        )}
-        {/* <AutoFocusPlugin /> */}
-        <ClearEditorPlugin />
+    <SettingsContext>
+      <LexicalComposer initialConfig={initialConfig}>
+        <TableContext>
+          <div
+            id={id}
+            className="richtext-editor"
+            style={{ borderColor: borderColor.get(status) }}
+          >
+            <ToolbarPlugin disabled={disabled} />
+            {max && (
+              <MaxLengthPlugin max={max.len} preventInput={max.preventInput} />
+            )}
+            {/* <AutoFocusPlugin /> */}
+            <ClearEditorPlugin />
 
-        <NewMentionsPlugin />
-        <EmojisPlugin />
-        <HashtagPlugin />
-        {/* <EmojiPickerPlugin /> */}
+            <NewMentionsPlugin />
+            <EmojisPlugin />
+            <HashtagPlugin />
+            {/* <EmojiPickerPlugin /> */}
 
-        <RichTextPlugin
-          contentEditable={
-            <div className="editor-scroller">
-              <div ref={onRef} className="editor">
-                <LexicalContentEditable placeholder={placeholder ?? "请输入"} />
-              </div>
-            </div>
-          }
-          ErrorBoundary={LexicalErrorBoundary}
-        />
-        {/* {isCollab ? (
+            <RichTextPlugin
+              contentEditable={
+                <div className="editor-scroller">
+                  <div ref={onRef} className="editor">
+                    <LexicalContentEditable
+                      placeholder={placeholder ?? "请输入"}
+                    />
+                  </div>
+                </div>
+              }
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            {/* {isCollab ? (
               <CollaborationPlugin
                 id="main"
                 providerFactory={createWebsocketProvider}
@@ -212,48 +235,55 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
               />
             ) : (
             )} */}
-        <ImagesPlugin />
-        <HistoryPlugin externalHistoryState={historyState} />
+            <ImagesPlugin />
+            <HistoryPlugin externalHistoryState={historyState} />
 
-        <ListPlugin />
-        <CheckListPlugin />
-        <TablePlugin
-          hasCellMerge={tableCellMerge}
-          hasCellBackgroundColor={tableCellBackgroundColor}
-        />
-        <TableCellResizerPlugin />
-        <ClickableLinkPlugin />
-        <HorizontalRulePlugin />
-
-        <PageBreakPlugin />
-        <LinkPlugin />
-        <YouTubePlugin />
-
-        {floatingAnchorElem && !isSmallWidthViewport && (
-          <>
-            {/* <DraggableBlockPlugin anchorElem={floatingAnchorElem} /> */}
-            <FloatingLinkEditorPlugin anchorElem={floatingAnchorElem} />
-            <FloatingTextFormatToolbarPlugin anchorElem={floatingAnchorElem} />
-            <TableActionMenuPlugin
-              anchorElem={floatingAnchorElem}
-              cellMerge={true}
+            <ListPlugin />
+            <CheckListPlugin />
+            <TablePlugin
+              hasHorizontalScroll
+              hasCellMerge={tableCellMerge}
+              hasCellBackgroundColor={tableCellBackgroundColor}
             />
-            <TableHoverActionsPlugin anchorElem={floatingAnchorElem} />
-          </>
-        )}
-        <SerializationPlugin onChange={(value) => setRichTextValue(value)} />
-        {(isCharLimit || isCharLimitUtf8) && (
-          <CharacterLimitPlugin
-            charset={isCharLimit ? "UTF-16" : "UTF-8"}
-            maxLength={5}
-          />
-        )}
+            <TableCellResizerPlugin />
+            <ClickableLinkPlugin />
+            <HorizontalRulePlugin />
 
-        {/* <TreeViewPlugin /> */}
+            <PageBreakPlugin />
+            <LinkPlugin />
+            <YouTubePlugin />
 
-        <div>{showTableOfContents && <TableOfContentsPlugin />}</div>
-      </div>
-    </LexicalComposer>
+            {floatingAnchorElem && !isSmallWidthViewport && (
+              <>
+                <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
+                <FloatingLinkEditorPlugin anchorElem={floatingAnchorElem} />
+                <FloatingTextFormatToolbarPlugin
+                  anchorElem={floatingAnchorElem}
+                />
+                <TableActionMenuPlugin
+                  anchorElem={floatingAnchorElem}
+                  cellMerge={true}
+                />
+                <TableHoverActionsPlugin anchorElem={floatingAnchorElem} />
+              </>
+            )}
+            <SerializationPlugin
+              onChange={(value) => setRichTextValue(value)}
+            />
+            {(isCharLimit || isCharLimitUtf8) && (
+              <CharacterLimitPlugin
+                charset={isCharLimit ? "UTF-16" : "UTF-8"}
+                maxLength={5}
+              />
+            )}
+
+            {/* <TreeViewPlugin /> */}
+
+            <div>{showTableOfContents && <TableOfContentsPlugin />}</div>
+          </div>
+        </TableContext>
+      </LexicalComposer>
+    </SettingsContext>
   );
 };
 
