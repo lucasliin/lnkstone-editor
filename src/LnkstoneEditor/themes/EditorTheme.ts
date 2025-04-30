@@ -40,12 +40,11 @@ const theme: EditorThemeClasses = {
     url: "lexicaltheme__tokenOperator",
     variable: "lexicaltheme__tokenVariable",
   },
-
+  tab: "lexicaltheme__tabNode",
   table: "lexicaltheme__table",
   tableCell: "lexicaltheme__tableCell",
   tableCellActionButton: "lexicaltheme__tableCellActionButton",
-  tableCellActionButtonContainer:
-    "lexicaltheme__tableCellActionButtonContainer",
+  tableCellActionButtonContainer: "lexicaltheme__tableCellActionButtonContainer",
   tableCellEditing: "lexicaltheme__tableCellEditing",
   tableCellHeader: "lexicaltheme__tableCellHeader",
   tableCellPrimarySelected: "lexicaltheme__tableCellPrimarySelected",

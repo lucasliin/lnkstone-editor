@@ -1,15 +1,9 @@
 import clsx from "clsx";
-import React, {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { IconArrowDropDown } from "../icons";
+import { useEventListener } from "ahooks";
 
 type DropDownContextType = {
   registerItem: (ref: React.RefObject<HTMLButtonElement>) => void;
@@ -65,8 +59,7 @@ const DropDownItems: React.FC<{
 }> = (props) => {
   const { children, dropDownRef, onClose } = props;
   const [items, setItems] = useState<React.RefObject<HTMLButtonElement>[]>();
-  const [highlightedItem, setHighlightedItem] =
-    useState<React.RefObject<HTMLButtonElement>>();
+  const [highlightedItem, setHighlightedItem] = useState<React.RefObject<HTMLButtonElement>>();
 
   const registerItem = useCallback(
     (itemRef: React.RefObject<HTMLButtonElement>) => {
@@ -74,33 +67,6 @@ const DropDownItems: React.FC<{
     },
     [setItems]
   );
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!items) return;
-
-    const key = event.key;
-
-    if (["Escape", "ArrowUp", "ArrowDown", "Tab"].includes(key)) {
-      event.preventDefault();
-    }
-
-    if (key === "Escape" || key === "Tab") {
-      onClose();
-    } else if (key === "ArrowUp") {
-      setHighlightedItem((prev) => {
-        if (!prev) return items[0];
-
-        const index = items.indexOf(prev) - 1;
-        return items[index === -1 ? items.length - 1 : index];
-      });
-    } else if (key === "ArrowDown") {
-      setHighlightedItem((prev) => {
-        if (!prev) return items[0];
-
-        return items[items.indexOf(prev) + 1];
-      });
-    }
-  };
 
   const contextValue = useMemo(
     () => ({
@@ -112,17 +78,12 @@ const DropDownItems: React.FC<{
   useEffect(() => {
     if (items && !highlightedItem) setHighlightedItem(items[0]);
 
-    if (highlightedItem && highlightedItem.current)
-      highlightedItem.current.focus();
+    if (highlightedItem && highlightedItem.current) highlightedItem.current.focus();
   }, [items, highlightedItem]);
 
   return (
     <DropDownContext.Provider value={contextValue}>
-      <div
-        ref={dropDownRef}
-        onKeyDown={handleKeyDown}
-        className="lexicaltheme__dropdowns"
-      >
+      <div ref={dropDownRef} className="lexicaltheme__dropdowns">
         {children}
       </div>
     </DropDownContext.Provider>
@@ -134,8 +95,8 @@ interface DropDownProps {
   children: ReactNode;
   buttonLabel?: ReactNode;
   buttonAriaLabel?: string;
-  type?: "button" | "dropdown";
   stopCloseOnClickSelf?: boolean;
+  type?: "button" | "dropdown" | "listitem";
 }
 
 const DropDown: React.FC<DropDownProps> = (props) => {
@@ -163,10 +124,7 @@ const DropDown: React.FC<DropDownProps> = (props) => {
     if (showDropDown && button !== null && dropDown !== null) {
       const { top, left } = button.getBoundingClientRect();
       dropDown.style.top = `${top + button.offsetHeight + dropDownPadding}px`;
-      dropDown.style.left = `${Math.min(
-        left,
-        window.innerWidth - dropDown.offsetWidth - 20
-      )}px`;
+      dropDown.style.left = `${Math.min(left, window.innerWidth - dropDown.offsetWidth - 20)}px`;
     }
   }, [dropDownRef, buttonRef, showDropDown]);
 
@@ -177,11 +135,7 @@ const DropDown: React.FC<DropDownProps> = (props) => {
       const handle = (event: MouseEvent) => {
         const target = event.target;
         if (stopCloseOnClickSelf) {
-          if (
-            dropDownRef.current &&
-            dropDownRef.current.contains(target as Node)
-          )
-            return;
+          if (dropDownRef.current && dropDownRef.current.contains(target as Node)) return;
         }
         if (!button.contains(target as Node)) setShowDropDown(false);
       };
@@ -192,6 +146,20 @@ const DropDown: React.FC<DropDownProps> = (props) => {
       };
     }
   }, [dropDownRef, buttonRef, showDropDown, stopCloseOnClickSelf]);
+
+  useEventListener("resize", () => {
+    if (showDropDown) {
+      const button = buttonRef.current;
+      const dropDown = dropDownRef.current;
+      if (button !== null && dropDown !== null) {
+        const { left } = button.getBoundingClientRect();
+        const newPosition = Math.min(left, window.innerWidth - dropDown.offsetWidth - 20);
+        if (newPosition !== dropDown.getBoundingClientRect().left) {
+          dropDown.style.left = `${newPosition}px`;
+        }
+      }
+    }
+  });
 
   useEffect(() => {
     const handleButtonPositionUpdate = () => {
@@ -207,7 +175,6 @@ const DropDown: React.FC<DropDownProps> = (props) => {
         }
       }
     };
-
     document.addEventListener("scroll", handleButtonPositionUpdate);
 
     return () => {
@@ -225,18 +192,14 @@ const DropDown: React.FC<DropDownProps> = (props) => {
         className={clsx(
           type === "button"
             ? "lexicaltheme__dropdown__activor_sm"
+            : type === "listitem"
+            ? "lexicaltheme__dropdown__activor_md"
             : "lexicaltheme__dropdown__activor",
           showDropDown ? "lexicaltheme__dropdown__activor_active" : ""
         )}
       >
-        {buttonLabel && typeof buttonLabel === "string" ? (
-          <span>{buttonLabel}</span>
-        ) : (
-          buttonLabel
-        )}
-        {type === "dropdown" && (
-          <IconArrowDropDown style={{ color: "#9ca3af " }} />
-        )}
+        {buttonLabel && typeof buttonLabel === "string" ? <span>{buttonLabel}</span> : buttonLabel}
+        {type === "dropdown" && <IconArrowDropDown style={{ color: "#9ca3af " }} />}
       </button>
 
       {showDropDown &&

@@ -7,11 +7,7 @@ import {
   ListNode,
 } from "@lexical/list";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  $createQuoteNode,
-  $isHeadingNode,
-  $isQuoteNode,
-} from "@lexical/rich-text";
+import { $createQuoteNode, $isHeadingNode, $isQuoteNode } from "@lexical/rich-text";
 import {
   $getSelectionStyleValueForProperty,
   $patchStyleText,
@@ -48,7 +44,7 @@ import {
   UNDO_COMMAND,
 } from "lexical";
 import clsx from "clsx";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 
 import DropDownFontSize from "../../components/DropDownFontSize";
@@ -61,6 +57,7 @@ import {
   IconChecklist,
   IconCloseOutlined,
   IconCode,
+  IconDotsHorizontal,
   IconFileImage,
   IconFontColor,
   IconHorizontalRule,
@@ -93,6 +90,8 @@ import DropDownLetterSpacing from "../../components/DropDownLetterSpacing";
 import { InsetYouTubeDialog } from "../YouTubePlugin";
 import { InsertTableDialog } from "../TablePlugin";
 import { $createCodeNode } from "@lexical/code";
+import DropDown from "../../components/DropDown";
+import { useSettings } from "../../context/SettingsContext";
 
 const blockTypeToBlockName = {
   bullet: "Bulleted List",
@@ -109,23 +108,29 @@ const blockTypeToBlockName = {
   quote: "Quote",
 };
 
-const Divider: React.FC = () => {
-  return <div className="lexicaltheme__toolbar__divider" />;
+const Divider: React.FC<{ horizontal?: boolean }> = (props) => {
+  const { horizontal = false } = props;
+  return (
+    <div
+      className={horizontal ? "lexicaltheme__toolbar__divider_h" : "lexicaltheme__toolbar__divider"}
+    />
+  );
 };
 
-interface ToolbarButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ToolbarButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
+  horizontal?: boolean;
 }
 
 export const ToolbarButton: React.FC<ToolbarButtonProps> = (props) => {
-  const { children, className, active, ...rest } = props;
+  const { children, className, active, horizontal, ...rest } = props;
   return (
     <button
       type="button"
       className={clsx(
         "toolbarbutton",
         active ? "toolbarbutton-active" : "",
+        horizontal ? "toolbarbutton-horizontal" : "",
         className
       )}
       {...rest}
@@ -136,17 +141,100 @@ export const ToolbarButton: React.FC<ToolbarButtonProps> = (props) => {
 };
 
 interface ToolbarPluginProps {
-  disabled?: boolean;
+  overflowType?: "fill" | "scroll" | "expand";
+  toolbarConfig?: ToolbarKeys[];
 }
 
+type ToolbarKeys =
+  | "divider"
+  | "undo"
+  | "redo"
+  | "fontSize"
+  | "lineHeight"
+  | "letterSpacing"
+  | "fontColor"
+  | "backgroundColor"
+  | "bold"
+  | "italic"
+  | "underLine"
+  | "strikeThrough"
+  | "subscript"
+  | "superscript"
+  | "clearFormatting"
+  | "emoji"
+  | "outdent"
+  | "indent"
+  | "textAlignLeft"
+  | "textAlignCenter"
+  | "textAlignRight"
+  | "textAlignJustify"
+  | "listBullet"
+  | "listNumber"
+  | "listCheck"
+  | "quote"
+  | "image"
+  | "video"
+  | "link"
+  | "horizontalRule"
+  | "table"
+  | "clearUp"
+  | "code";
+
 const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
-  const { disabled } = props;
+  const {
+    overflowType = "expand",
+    toolbarConfig = [
+      "undo",
+      "redo",
+      "divider",
+      "fontSize",
+      "lineHeight",
+      "letterSpacing",
+      "divider",
+      "fontColor",
+      "backgroundColor",
+      "bold",
+      "italic",
+      "underLine",
+      "strikeThrough",
+      "divider",
+      "subscript",
+      "superscript",
+      "clearFormatting",
+      "emoji",
+      "divider",
+      "outdent",
+      "indent",
+      "textAlignLeft",
+      "textAlignCenter",
+      "textAlignRight",
+      "textAlignJustify",
+      "divider",
+      "listBullet",
+      "listNumber",
+      "listCheck",
+      "quote",
+      "divider",
+      "image",
+      "video",
+      "link",
+      "horizontalRule",
+      "table",
+      "divider",
+      "clearUp",
+      "code",
+    ],
+  } = props;
+  const {
+    settings: { disabled },
+  } = useSettings();
+
   const [editor] = useLexicalComposerContext();
   const [activeEditor, setActiveEditor] = useState(editor);
-  const toolbarRef = useRef(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState<number>();
 
-  const [blockType, setBlockType] =
-    useState<keyof typeof blockTypeToBlockName>("paragraph");
+  const [blockType, setBlockType] = useState<keyof typeof blockTypeToBlockName>("paragraph");
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
 
   const [canUndo, setCanUndo] = useState(false);
@@ -202,34 +290,19 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
 
       if (elementDOM !== null) {
         if ($isListNode(element)) {
-          const parentList = $getNearestNodeOfType<ListNode>(
-            anchorNode,
-            ListNode
-          );
-          const type = parentList
-            ? parentList.getListType()
-            : (element as ListNode).getListType();
+          const parentList = $getNearestNodeOfType<ListNode>(anchorNode, ListNode);
+          const type = parentList ? parentList.getListType() : (element as ListNode).getListType();
           setBlockType(type);
         } else {
-          const type = $isHeadingNode(element)
-            ? element.getTag()
-            : element.getType();
+          const type = $isHeadingNode(element) ? element.getTag() : element.getType();
           if (type in blockTypeToBlockName) {
             setBlockType(type as keyof typeof blockTypeToBlockName);
           }
         }
       }
       // Handle buttons
-      setFontColor(
-        $getSelectionStyleValueForProperty(selection, "color", "#000")
-      );
-      setBgColor(
-        $getSelectionStyleValueForProperty(
-          selection,
-          "background-color",
-          "#fff"
-        )
-      );
+      setFontColor($getSelectionStyleValueForProperty(selection, "color", "#000"));
+      setBgColor($getSelectionStyleValueForProperty(selection, "background-color", "#fff"));
       let matchingParent;
       if ($isLinkNode(parent)) {
         // If node is a link, we need to fetch the parent paragraph node to set format
@@ -257,15 +330,9 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
       setIsSubscript(selection.hasFormat("subscript"));
       setIsSuperscript(selection.hasFormat("superscript"));
 
-      setFontSize(
-        $getSelectionStyleValueForProperty(selection, "font-size", "16px")
-      );
-      setLineHeight(
-        $getSelectionStyleValueForProperty(selection, "line-height")
-      );
-      setLetterSpacing(
-        $getSelectionStyleValueForProperty(selection, "letter-spacing", "0px")
-      );
+      setFontSize($getSelectionStyleValueForProperty(selection, "font-size", "16px"));
+      setLineHeight($getSelectionStyleValueForProperty(selection, "line-height"));
+      setLetterSpacing($getSelectionStyleValueForProperty(selection, "letter-spacing", "0px"));
     }
   }, [activeEditor]);
 
@@ -273,7 +340,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
   useEffect(() => {
     return editor.registerCommand(
       SELECTION_CHANGE_COMMAND,
-      (_payload, newEditor) => {
+      (_, newEditor) => {
         setActiveEditor(newEditor);
         $updateToolbar();
         return false;
@@ -323,6 +390,32 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
       )
     );
   }, [$updateToolbar, activeEditor, editor]);
+
+  useEffect(() => {
+    if (overflowType !== "expand") {
+      setOverflow(toolbarConfig.length);
+      return;
+    }
+
+    const checkOverflow = () => {
+      const container = toolbarRef.current;
+      if (container) {
+        let index = 0;
+        let cWidth = container.clientWidth - 8 - 36;
+        while (cWidth > 0) {
+          cWidth -= toolbarItemMap[toolbarConfig[index]]?.width + 2;
+          if (cWidth > 0) index++;
+          else index--;
+        }
+        if (index !== overflow) setOverflow(index);
+      }
+    };
+
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const formatText = (format: TextFormatType) => {
     editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
@@ -408,10 +501,7 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
 
   const insertLink = useCallback(() => {
     if (!isLink) {
-      activeEditor.dispatchCommand(
-        TOGGLE_LINK_COMMAND,
-        sanitizeUrl("https://")
-      );
+      activeEditor.dispatchCommand(TOGGLE_LINK_COMMAND, sanitizeUrl("https://"));
     } else {
       activeEditor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
@@ -448,266 +538,483 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
     }
   };
 
+  const toolbarItemMap = {
+    divider: {
+      width: 17,
+      children: (horizontal?: boolean) => <Divider horizontal={horizontal} />,
+    },
+    undo: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          horizontal={horizontal}
+          disabled={!canUndo || disabled}
+          onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
+        >
+          <IconUndo />
+          {horizontal ? "Undo" : null}
+        </ToolbarButton>
+      ),
+    },
+    redo: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          horizontal={horizontal}
+          disabled={!canRedo || disabled}
+          onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
+        >
+          <IconRedo />
+          {horizontal ? "Redo" : null}
+        </ToolbarButton>
+      ),
+    },
+    fontSize: {
+      width: 100,
+      children: (horizontal?: boolean) => (
+        <DropDownFontSize disabled={disabled} editor={activeEditor} selectionFontSize={fontSize} />
+      ),
+    },
+    lineHeight: {
+      width: 100,
+      children: (horizontal?: boolean) => (
+        <DropDownLineHeight
+          disabled={disabled}
+          editor={activeEditor}
+          selectionLineHeight={lineHeight}
+        />
+      ),
+    },
+    letterSpacing: {
+      width: 100,
+      children: (horizontal?: boolean) => (
+        <DropDownLetterSpacing
+          disabled={disabled}
+          editor={activeEditor}
+          selectionLetterSpacing={letterSpacing}
+        />
+      ),
+    },
+    fontColor: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <DropdownColorPicker
+          color={fontColor}
+          disabled={disabled}
+          icon={<IconFontColor />}
+          onChange={onFontColorSelect}
+        />
+      ),
+    },
+    backgroundColor: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <DropdownColorPicker
+          color={bgColor}
+          disabled={disabled}
+          icon={<IconBackgound />}
+          onChange={onBgColorSelect}
+        />
+      ),
+    },
+    bold: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          active={isBold}
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => formatText("bold")}
+        >
+          <IconTypeBold />
+          {horizontal ? "Bold" : null}
+        </ToolbarButton>
+      ),
+    },
+    italic: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          active={isItalic}
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => formatText("italic")}
+        >
+          <IconTypeItalic />
+          {horizontal ? "Italic" : null}
+        </ToolbarButton>
+      ),
+    },
+    underLine: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          active={isUnderline}
+          horizontal={horizontal}
+          onClick={() => formatText("underline")}
+        >
+          <IconTypeUnderline />
+          {horizontal ? "UnderLine" : null}
+        </ToolbarButton>
+      ),
+    },
+    strikeThrough: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={isStrikethrough}
+          onClick={() => formatText("strikethrough")}
+        >
+          <IconTypeStrikethrough />
+          {horizontal ? "StrikeThrough" : null}
+        </ToolbarButton>
+      ),
+    },
+    subscript: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          active={isSubscript}
+          horizontal={horizontal}
+          onClick={() => formatText("subscript")}
+        >
+          <IconTypeSubscript />
+          {horizontal ? "Subscript" : null}
+        </ToolbarButton>
+      ),
+    },
+    superscript: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          active={isSuperscript}
+          horizontal={horizontal}
+          onClick={() => formatText("superscript")}
+        >
+          <IconTypeSuperscript />
+          {horizontal ? "Superscript" : null}
+        </ToolbarButton>
+      ),
+    },
+    clearFormatting: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton disabled={disabled} horizontal={horizontal} onClick={clearFormatting}>
+          <IconTypeClear />
+          {horizontal ? "Clear Format" : null}
+        </ToolbarButton>
+      ),
+    },
+    emoji: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <DropdownEmoji
+          disabled={disabled}
+          editor={activeEditor}
+          type={horizontal ? "listitem" : "button"}
+        />
+      ),
+    },
+    outdent: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)}
+        >
+          <IconOutdent />
+          {horizontal ? "Outdent" : null}
+        </ToolbarButton>
+      ),
+    },
+    indent: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)}
+        >
+          <IconIndent />
+          {horizontal ? "Indent" : null}
+        </ToolbarButton>
+      ),
+    },
+    textAlignLeft: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={elementFormat === "left"}
+          onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "left")}
+        >
+          <IconTextLeft />
+          {horizontal ? "Left Align" : null}
+        </ToolbarButton>
+      ),
+    },
+    textAlignCenter: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={elementFormat === "center"}
+          onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "center")}
+        >
+          <IconTextCenter />
+          {horizontal ? "Center Align" : null}
+        </ToolbarButton>
+      ),
+    },
+    textAlignRight: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={elementFormat === "right"}
+          onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "right")}
+        >
+          <IconTextRight />
+          {horizontal ? "Right Align" : null}
+        </ToolbarButton>
+      ),
+    },
+    textAlignJustify: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={elementFormat === "justify"}
+          onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "justify")}
+        >
+          <IconJustify />
+          {horizontal ? "Justify Align" : null}
+        </ToolbarButton>
+      ),
+    },
+    listBullet: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={blockType === "bullet"}
+          onClick={() => {
+            if (blockType !== "bullet") {
+              editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+            } else {
+              formatParagraph();
+            }
+          }}
+        >
+          <IconListUl />
+          {horizontal ? "Bullet List" : null}
+        </ToolbarButton>
+      ),
+    },
+    listNumber: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={blockType === "number"}
+          onClick={() => {
+            if (blockType !== "number") {
+              editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+            } else {
+              formatParagraph();
+            }
+          }}
+        >
+          <IconListOl />
+          {horizontal ? "Number List" : null}
+        </ToolbarButton>
+      ),
+    },
+    listCheck: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={blockType === "check"}
+          onClick={() => {
+            if (blockType !== "check") {
+              editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
+            } else {
+              formatParagraph();
+            }
+          }}
+        >
+          <IconChecklist />
+          {horizontal ? "Check List" : null}
+        </ToolbarButton>
+      ),
+    },
+    quote: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          active={blockType === "quote"}
+          onClick={() => {
+            if (blockType !== "quote") {
+              editor.update(() => {
+                const selection = $getSelection();
+                $setBlocksType(selection, () => $createQuoteNode());
+              });
+            } else {
+              formatParagraph();
+            }
+          }}
+        >
+          <IconChatSquareQuote />
+          {horizontal ? "Quote" : null}
+        </ToolbarButton>
+      ),
+    },
+    image: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => {
+            showModal("插入图片", (onClose) => (
+              <InsertImageDialog activeEditor={activeEditor} onClose={onClose} />
+            ));
+          }}
+        >
+          <IconFileImage />
+          {horizontal ? "Image" : null}
+        </ToolbarButton>
+      ),
+    },
+    video: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => {
+            showModal(`添加 YouTube 视频`, (onClose) => (
+              <InsetYouTubeDialog activeEditor={activeEditor} onClose={onClose} />
+            ));
+          }}
+        >
+          <IconYoutube />
+          {horizontal ? "Video" : null}
+        </ToolbarButton>
+      ),
+    },
+    link: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          active={isLink}
+          disabled={disabled}
+          onClick={insertLink}
+          horizontal={horizontal}
+        >
+          <IconLink />
+          {horizontal ? "Link" : null}
+        </ToolbarButton>
+      ),
+    },
+    horizontalRule: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
+        >
+          <IconHorizontalRule />
+          {horizontal ? "Divider" : null}
+        </ToolbarButton>
+      ),
+    },
+    table: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          disabled={disabled}
+          horizontal={horizontal}
+          onClick={() => {
+            showModal("插入表格", (onClose) => (
+              <InsertTableDialog activeEditor={activeEditor} onClose={onClose} />
+            ));
+          }}
+        >
+          <IconTable />
+          {horizontal ? "Table" : null}
+        </ToolbarButton>
+      ),
+    },
+    clearUp: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton
+          horizontal={horizontal}
+          disabled={isEditorEmpty || disabled}
+          onClick={() => editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined)}
+        >
+          <IconCloseOutlined />
+          {horizontal ? "Clear Up" : null}
+        </ToolbarButton>
+      ),
+    },
+    code: {
+      width: 36,
+      children: (horizontal?: boolean) => (
+        <ToolbarButton horizontal={horizontal} onClick={formatCode}>
+          <IconCode />
+          {horizontal ? "Code" : null}
+        </ToolbarButton>
+      ),
+    },
+  };
+
   return (
-    <div ref={toolbarRef} className="lexicaltheme__toolbar">
-      {/* Undo/Redo */}
-      <ToolbarButton
-        disabled={!canUndo || disabled}
-        onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
-      >
-        <IconUndo />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={!canRedo || disabled}
-        onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
-      >
-        <IconRedo />
-      </ToolbarButton>
-      <Divider />
-
-      {/* font size */}
-      <DropDownFontSize
-        disabled={disabled}
-        selectionFontSize={fontSize}
-        editor={activeEditor}
-      />
-      <DropDownLineHeight
-        disabled={disabled}
-        editor={activeEditor}
-        selectionLineHeight={lineHeight}
-      />
-      <DropDownLetterSpacing
-        disabled={disabled}
-        editor={activeEditor}
-        selectionLetterSpacing={letterSpacing}
-      />
-      <Divider />
-
-      {/* font style */}
-      <DropdownColorPicker
-        color={fontColor}
-        disabled={disabled}
-        icon={<IconFontColor />}
-        onChange={onFontColorSelect}
-      />
-      <DropdownColorPicker
-        color={bgColor}
-        disabled={disabled}
-        icon={<IconBackgound />}
-        onChange={onBgColorSelect}
-      />
-      <ToolbarButton
-        active={isBold}
-        disabled={disabled}
-        onClick={() => formatText("bold")}
-      >
-        <IconTypeBold />
-      </ToolbarButton>
-      <ToolbarButton
-        active={isItalic}
-        disabled={disabled}
-        onClick={() => formatText("italic")}
-      >
-        <IconTypeItalic />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={isUnderline}
-        onClick={() => formatText("underline")}
-      >
-        <IconTypeUnderline />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={isStrikethrough}
-        onClick={() => formatText("strikethrough")}
-      >
-        <IconTypeStrikethrough />
-      </ToolbarButton>
-      <Divider />
-
-      {/* script/subscript/superscript */}
-      <ToolbarButton
-        disabled={disabled}
-        active={isSubscript}
-        onClick={() => formatText("subscript")}
-      >
-        <IconTypeSubscript />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={isSuperscript}
-        onClick={() => formatText("superscript")}
-      >
-        <IconTypeSuperscript />
-      </ToolbarButton>
-      <ToolbarButton onClick={clearFormatting} disabled={disabled}>
-        <IconTypeClear />
-      </ToolbarButton>
-      <DropdownEmoji editor={activeEditor} disabled={disabled} />
-
-      <Divider />
-
-      {/* alignment */}
-      <ToolbarButton
-        disabled={disabled}
-        onClick={() =>
-          editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
-        }
-      >
-        <IconOutdent />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        onClick={() =>
-          editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
-        }
-      >
-        <IconIndent />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={elementFormat === "left"}
-        onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "left")}
-      >
-        <IconTextLeft />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={elementFormat === "center"}
-        onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "center")}
-      >
-        <IconTextCenter />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={elementFormat === "right"}
-        onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "right")}
-      >
-        <IconTextRight />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={elementFormat === "justify"}
-        onClick={() =>
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "justify")
-        }
-      >
-        <IconJustify />
-      </ToolbarButton>
-      <Divider />
-
-      <ToolbarButton
-        disabled={disabled}
-        active={blockType === "bullet"}
-        onClick={() => {
-          if (blockType !== "bullet") {
-            editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
-          } else {
-            formatParagraph();
-          }
-        }}
-      >
-        <IconListUl />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={blockType === "number"}
-        onClick={() => {
-          if (blockType !== "number") {
-            editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
-          } else {
-            formatParagraph();
-          }
-        }}
-      >
-        <IconListOl />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        active={blockType === "check"}
-        onClick={() => {
-          if (blockType !== "check") {
-            editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
-          } else {
-            formatParagraph();
-          }
-        }}
-      >
-        <IconChecklist />
-      </ToolbarButton>
-
-      <ToolbarButton
-        disabled={disabled}
-        active={blockType === "quote"}
-        onClick={() => {
-          if (blockType !== "quote") {
-            editor.update(() => {
-              const selection = $getSelection();
-              $setBlocksType(selection, () => $createQuoteNode());
-            });
-          } else {
-            formatParagraph();
-          }
-        }}
-      >
-        <IconChatSquareQuote />
-      </ToolbarButton>
-
-      <Divider />
-
-      <ToolbarButton
-        disabled={disabled}
-        onClick={() => {
-          showModal("插入图片", (onClose) => (
-            <InsertImageDialog activeEditor={activeEditor} onClose={onClose} />
-          ));
-        }}
-      >
-        <IconFileImage />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        onClick={() => {
-          showModal(`添加 YouTube 视频`, (onClose) => (
-            <InsetYouTubeDialog activeEditor={activeEditor} onClose={onClose} />
-          ));
-        }}
-      >
-        <IconYoutube />
-      </ToolbarButton>
-      <ToolbarButton disabled={disabled} active={isLink} onClick={insertLink}>
-        <IconLink />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        onClick={() =>
-          editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)
-        }
-      >
-        <IconHorizontalRule />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={disabled}
-        onClick={() => {
-          showModal("插入表格", (onClose) => (
-            <InsertTableDialog activeEditor={activeEditor} onClose={onClose} />
-          ));
-        }}
-      >
-        <IconTable />
-      </ToolbarButton>
-      <ToolbarButton onClick={formatCode}>
-        <IconCode />
-      </ToolbarButton>
-
-      <Divider />
-      <ToolbarButton
-        disabled={isEditorEmpty || disabled}
-        onClick={() => editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined)}
-      >
-        <IconCloseOutlined />
-      </ToolbarButton>
+    <div
+      ref={toolbarRef}
+      className={
+        overflowType === "scroll" ? "lexicaltheme__toolbar_scroll" : "lexicaltheme__toolbar"
+      }
+    >
+      {toolbarConfig.map((config, index) => {
+        if (!overflow || index > overflow) return null;
+        return (
+          <React.Fragment key={config + index}>{toolbarItemMap[config].children()}</React.Fragment>
+        );
+      })}
+      {overflow && overflow !== toolbarConfig.length ? (
+        <DropDown
+          type="button"
+          disabled={disabled}
+          buttonLabel={<IconDotsHorizontal />}
+          stopCloseOnClickSelf
+        >
+          <div className="lexicaltheme__dropdown__more_box">
+            {toolbarConfig.map((config, index) => {
+              if (!overflow || index <= overflow) return null;
+              return <div key={config + index}>{toolbarItemMap[config].children(true)}</div>;
+            })}
+          </div>
+        </DropDown>
+      ) : null}
       {modal}
     </div>
   );

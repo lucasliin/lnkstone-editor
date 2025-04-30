@@ -1,23 +1,15 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $trimTextContentFromAnchor } from "@lexical/selection";
 import { $restoreEditorState } from "@lexical/utils";
-import {
-  $getSelection,
-  $isRangeSelection,
-  EditorState,
-  RootNode,
-} from "lexical";
+import { $getSelection, $isRangeSelection, EditorState, RootNode } from "lexical";
 import { useEffect, useState } from "react";
 
 interface MaxLengthPluginProps {
-  max: number;
+  maxLength: number;
   preventInput?: boolean;
 }
 
-const MaxLengthPlugin: React.FC<MaxLengthPluginProps> = ({
-  max,
-  preventInput,
-}) => {
+const MaxLengthPlugin: React.FC<MaxLengthPluginProps> = ({ maxLength, preventInput }) => {
   const [editor] = useLexicalComposerContext();
   const [textContentSize, setTextContentSize] = useState(0);
 
@@ -30,20 +22,18 @@ const MaxLengthPlugin: React.FC<MaxLengthPluginProps> = ({
         return;
       }
       const prevEditorState = editor.getEditorState();
-      const prevTextContentSize = prevEditorState.read(() =>
-        rootNode.getTextContentSize()
-      );
-      const textContentSize = rootNode.getTextContentSize();
+      const prevTextContentSize = prevEditorState.read(() => rootNode.getTextContentSize());
+      const textContentSize =
+        rootNode.getTextContentSize() -
+        (rootNode.getChildrenSize() > 1 ? rootNode.getChildrenSize() - 1 : 0);
       setTextContentSize(textContentSize);
+
       if (prevTextContentSize !== textContentSize && preventInput) {
-        const delCount = textContentSize - max;
+        const delCount = textContentSize - maxLength;
         const anchor = selection.anchor;
 
         if (delCount > 0) {
-          if (
-            prevTextContentSize === max &&
-            lastRestoredEditorState !== prevEditorState
-          ) {
+          if (prevTextContentSize === maxLength && lastRestoredEditorState !== prevEditorState) {
             lastRestoredEditorState = prevEditorState;
             $restoreEditorState(editor, prevEditorState);
           } else {
@@ -52,14 +42,14 @@ const MaxLengthPlugin: React.FC<MaxLengthPluginProps> = ({
         }
       }
     });
-  }, [editor, max, preventInput]);
+  }, [editor, maxLength, preventInput]);
 
   return (
     <div
       className="lexicaltheme__count"
-      style={{ color: textContentSize > max ? "red" : "#6b7280" }}
+      style={{ color: textContentSize > maxLength ? "red" : "#6b7280" }}
     >
-      {textContentSize + "/" + max}
+      {textContentSize + "/" + maxLength}
     </div>
   );
 };

@@ -1,9 +1,4 @@
-import {
-  $createLinkNode,
-  $isAutoLinkNode,
-  $isLinkNode,
-  TOGGLE_LINK_COMMAND,
-} from "@lexical/link";
+import { $createLinkNode, $isAutoLinkNode, $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $findMatchingParent, mergeRegister } from "@lexical/utils";
 import {
@@ -74,15 +69,9 @@ const FloatingLinkEditorModal: React.FC<{
                 value={linkValues.url}
                 placeholder="请输入链接地址"
                 onChange={(val) => setLinkValues({ ...linkValues, url: val })}
-                prefix={
-                  <div className="lexicaltheme__link-prefix">
-                    {linkValues.type}
-                  </div>
-                }
+                prefix={<div className="lexicaltheme__link-prefix">{linkValues.type}</div>}
               />
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "10px" }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 {[
                   { value: "https://", label: "https" },
                   { value: "http://", label: "http" },
@@ -98,10 +87,7 @@ const FloatingLinkEditorModal: React.FC<{
                         setLinkValues({ ...linkValues, type: typeValue.value });
                       }}
                     />
-                    <label
-                      className="checkbox-label"
-                      htmlFor={`link-type-${typeValue.value}`}
-                    >
+                    <label className="checkbox-label" htmlFor={`link-type-${typeValue.value}`}>
                       {typeValue.label}
                     </label>
                   </div>
@@ -148,9 +134,7 @@ const FloatingLinkEditor: React.FC<FloatingLinkEditorProps> = (props) => {
   const [linkType, setLinkType] = useState("https://");
   const [target, setTarget] = useState("");
   const [editedLinkUrl, setEditedLinkUrl] = useState("");
-  const [lastSelection, setLastSelection] = useState<BaseSelection | null>(
-    null
-  );
+  const [lastSelection, setLastSelection] = useState<BaseSelection | null>(null);
   const [openModal, setOpenModal] = useState(false);
 
   const $updateLinkEditor = useCallback(() => {
@@ -342,10 +326,7 @@ function useFloatingLinkEditorToolbar(
       if ($isRangeSelection(selection)) {
         const focusNode = getSelectedNode(selection);
         const focusLinkNode = $findMatchingParent(focusNode, $isLinkNode);
-        const focusAutoLinkNode = $findMatchingParent(
-          focusNode,
-          $isAutoLinkNode
-        );
+        const focusAutoLinkNode = $findMatchingParent(focusNode, $isAutoLinkNode);
         if (!(focusLinkNode || focusAutoLinkNode)) {
           setIsLink(false);
           return;
@@ -361,8 +342,7 @@ function useFloatingLinkEditorToolbar(
               (linkNode && !linkNode.is(focusLinkNode)) ||
               (focusAutoLinkNode && !focusAutoLinkNode.is(autoLinkNode)) ||
               (autoLinkNode &&
-                (!autoLinkNode.is(focusAutoLinkNode) ||
-                  autoLinkNode.getIsUnlinked()))
+                (!autoLinkNode.is(focusAutoLinkNode) || autoLinkNode.getIsUnlinked()))
             );
           });
         if (!badNode) setIsLink(true);
