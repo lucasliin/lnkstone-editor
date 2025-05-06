@@ -1,6 +1,6 @@
 {
   "name": "lnkstone-editor",
-  "version": "0.0.9",
+  "version": "0.0.10-beta2",
   "main": "dist/lnkstone-editor.umd.js",
   "module": "dist/lnkstone-editor.es.js",
   "types": "dist/index.d.ts",

@@ -15,7 +15,7 @@ import { HashtagPlugin } from "@lexical/react/LexicalHashtagPlugin";
 import { CAN_USE_DOM } from "@lexical/utils";
 import { $isLinkNode } from "@lexical/link";
 
-import ToolbarPlugin from "./plugins/ToolbarPlugin";
+import ToolbarPlugin, { ToolbarPluginProps } from "./plugins/ToolbarPlugin";
 import theme from "./themes/CommentEditorTheme";
 import { useSharedHistoryContext } from "./context/SharedHistoryContext";
 import { SettingsContext, useSettings } from "./context/SettingsContext";
@@ -48,19 +48,33 @@ import TableOfContentsPlugin from "./plugins/TableOfContentsPlugin";
 import DraggableBlockPlugin from "./plugins/DraggableBlockPlugin";
 import { ExtendedTextNode } from "./nodes/ExtendedTextNode";
 import { TableContext } from "./plugins/TablePlugin";
+import EditorPlugin from "./plugins/EditorablePlugin";
+import TreeViewPlugin from "./plugins/TreeViewPlugin";
 
 export interface LnkstoneEditorProps {
   id?: string;
+  treeView?: boolean;
   disabled?: boolean;
   placeholder?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
+  toolbarConfig?: ToolbarPluginProps;
   max?: { len: number; preventInput?: boolean };
   status?: "error" | "success" | "warning" | "info" | "default";
 }
 
 const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
-  const { id, max, disabled, onChange, placeholder, defaultValue, status = "default" } = props;
+  const {
+    id,
+    max,
+    treeView,
+    disabled,
+    onChange,
+    placeholder,
+    defaultValue,
+    toolbarConfig,
+    status = "default",
+  } = props;
 
   const borderColor = new Map<string, string>([
     ["default", "#e2e2e2"],
@@ -178,22 +192,12 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
   }, [richTextValue]);
 
   return (
-    <SettingsContext
-      initialConfig={{
-        isCharLimit: false,
-        isCharLimitUtf8: false,
-        isCollab: false,
-        isMaxLength: false,
-        showTableOfContents: false,
-        tableCellBackgroundColor: true,
-        tableCellMerge: true,
-        disabled: !!disabled,
-      }}
-    >
+    <SettingsContext>
       <LexicalComposer initialConfig={initialConfig}>
         <TableContext>
           <div id={id} className="richtext-editor" style={{ borderColor: borderColor.get(status) }}>
-            <ToolbarPlugin />
+            <EditorPlugin disabled={disabled} />
+            <ToolbarPlugin {...toolbarConfig} />
             {/* {max && <MaxLengthPlugin max={max.len} preventInput={max.preventInput} />} */}
             {/* <AutoFocusPlugin /> */}
             <ClearEditorPlugin />
@@ -253,7 +257,7 @@ const LnkstoneEditor: React.FC<LnkstoneEditorProps> = (props) => {
               <CharacterLimitPlugin charset={isCharLimit ? "UTF-16" : "UTF-8"} maxLength={5} />
             )}
 
-            {/* <TreeViewPlugin /> */}
+            {treeView ? <TreeViewPlugin /> : null}
 
             <div>{showTableOfContents && <TableOfContentsPlugin />}</div>
           </div>

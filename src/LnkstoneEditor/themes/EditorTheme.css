@@ -12,6 +12,11 @@
   text-align: left;
 }
 
+.richtext-editor button:disabled {
+  color: #d1d5db;
+  cursor: default;
+}
+
 .editor-scroller {
   min-height: 150px;
   border: 0;
@@ -663,6 +668,7 @@ button.toolbarbutton:disabled:hover {
 }
 
 .toolbarbutton-horizontal {
+  padding: 0px 4px;
   width: 100%;
   justify-content: left !important;
 }
@@ -840,7 +846,7 @@ button.toolbarbutton:disabled:hover {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  overflow-x: scroll;
+  overflow-x: auto;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   padding: 4px;

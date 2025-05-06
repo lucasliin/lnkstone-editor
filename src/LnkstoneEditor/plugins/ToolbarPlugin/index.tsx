@@ -92,6 +92,7 @@ import { InsertTableDialog } from "../TablePlugin";
 import { $createCodeNode } from "@lexical/code";
 import DropDown from "../../components/DropDown";
 import { useSettings } from "../../context/SettingsContext";
+import { DEFAULT_TOOLBAR_CONFIG, ToolbarKeys, ToolbarOverflowType } from "../../..";
 
 const blockTypeToBlockName = {
   bullet: "Bulleted List",
@@ -140,91 +141,13 @@ export const ToolbarButton: React.FC<ToolbarButtonProps> = (props) => {
   );
 };
 
-interface ToolbarPluginProps {
-  overflowType?: "fill" | "scroll" | "expand";
+export interface ToolbarPluginProps {
+  overflowType?: ToolbarOverflowType;
   toolbarConfig?: ToolbarKeys[];
 }
 
-type ToolbarKeys =
-  | "divider"
-  | "undo"
-  | "redo"
-  | "fontSize"
-  | "lineHeight"
-  | "letterSpacing"
-  | "fontColor"
-  | "backgroundColor"
-  | "bold"
-  | "italic"
-  | "underLine"
-  | "strikeThrough"
-  | "subscript"
-  | "superscript"
-  | "clearFormatting"
-  | "emoji"
-  | "outdent"
-  | "indent"
-  | "textAlignLeft"
-  | "textAlignCenter"
-  | "textAlignRight"
-  | "textAlignJustify"
-  | "listBullet"
-  | "listNumber"
-  | "listCheck"
-  | "quote"
-  | "image"
-  | "video"
-  | "link"
-  | "horizontalRule"
-  | "table"
-  | "clearUp"
-  | "code";
-
 const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
-  const {
-    overflowType = "expand",
-    toolbarConfig = [
-      "undo",
-      "redo",
-      "divider",
-      "fontSize",
-      "lineHeight",
-      "letterSpacing",
-      "divider",
-      "fontColor",
-      "backgroundColor",
-      "bold",
-      "italic",
-      "underLine",
-      "strikeThrough",
-      "divider",
-      "subscript",
-      "superscript",
-      "clearFormatting",
-      "emoji",
-      "divider",
-      "outdent",
-      "indent",
-      "textAlignLeft",
-      "textAlignCenter",
-      "textAlignRight",
-      "textAlignJustify",
-      "divider",
-      "listBullet",
-      "listNumber",
-      "listCheck",
-      "quote",
-      "divider",
-      "image",
-      "video",
-      "link",
-      "horizontalRule",
-      "table",
-      "divider",
-      "clearUp",
-      "code",
-    ],
-  } = props;
+  const { overflowType = "expand", toolbarConfig = DEFAULT_TOOLBAR_CONFIG } = props;
   const {
     settings: { disabled },
   } = useSettings();
@@ -336,6 +259,20 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
     }
   }, [activeEditor]);
 
+  const checkOverflow = () => {
+    const container = toolbarRef.current;
+    if (container) {
+      let index = 0;
+      let cWidth = container.clientWidth - 8 - 36;
+      while (cWidth > 0 && index < toolbarConfig.length) {
+        cWidth -= toolbarItemMap[toolbarConfig[index]]?.width + 2;
+        if (cWidth > 0) index++;
+        else index--;
+      }
+      if (index !== overflow) setOverflow(index);
+    }
+  };
+
   //- register editor
   useEffect(() => {
     return editor.registerCommand(
@@ -396,26 +333,18 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
       setOverflow(toolbarConfig.length);
       return;
     }
-
-    const checkOverflow = () => {
-      const container = toolbarRef.current;
-      if (container) {
-        let index = 0;
-        let cWidth = container.clientWidth - 8 - 36;
-        while (cWidth > 0) {
-          cWidth -= toolbarItemMap[toolbarConfig[index]]?.width + 2;
-          if (cWidth > 0) index++;
-          else index--;
-        }
-        if (index !== overflow) setOverflow(index);
-      }
-    };
-
-    checkOverflow();
     window.addEventListener("resize", checkOverflow);
     return () => window.removeEventListener("resize", checkOverflow);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (overflowType !== "expand") {
+      setOverflow(toolbarConfig.length);
+      return;
+    }
+    checkOverflow();
+  }, [toolbarConfig, overflowType]);
 
   const formatText = (format: TextFormatType) => {
     editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
@@ -1004,8 +933,8 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         <DropDown
           type="button"
           disabled={disabled}
-          buttonLabel={<IconDotsHorizontal />}
           stopCloseOnClickSelf
+          buttonLabel={<IconDotsHorizontal />}
         >
           <div className="lexicaltheme__dropdown__more_box">
             {toolbarConfig.map((config, index) => {
