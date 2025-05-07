@@ -1142,6 +1142,7 @@ button.toolbarbutton:disabled:hover {
 }
 
 .lexicaltheme__dropdown__activor {
+  white-space: nowrap;
   min-height: 36px;
   min-width: 100px;
   display: flex;

@@ -905,15 +905,15 @@ const ToolbarPlugin: React.FC<ToolbarPluginProps> = (props) => {
         </ToolbarButton>
       ),
     },
-    code: {
-      width: 36,
-      children: (horizontal?: boolean) => (
-        <ToolbarButton horizontal={horizontal} onClick={formatCode}>
-          <IconCode />
-          {horizontal ? "Code" : null}
-        </ToolbarButton>
-      ),
-    },
+    // code: {
+    //   width: 36,
+    //   children: (horizontal?: boolean) => (
+    //     <ToolbarButton horizontal={horizontal} onClick={formatCode}>
+    //       <IconCode />
+    //       {horizontal ? "Code" : null}
+    //     </ToolbarButton>
+    //   ),
+    // },
   };
 
   return (

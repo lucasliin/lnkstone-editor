@@ -32,8 +32,8 @@ export type ToolbarKeys =
   | "link"
   | "horizontalRule"
   | "table"
-  | "clearUp"
-  | "code";
+  | "clearUp";
+// | "code";
 
 export type ToolbarOverflowType = "fill" | "scroll" | "expand";
 
@@ -76,7 +76,7 @@ export const DEFAULT_TOOLBAR_CONFIG: ToolbarKeys[] = [
   "table",
   "divider",
   "clearUp",
-  "code",
+  // "code",
 ];
 
 export default LnkstoneEditor;
